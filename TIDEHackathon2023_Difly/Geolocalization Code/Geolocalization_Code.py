@@ -4,7 +4,14 @@ import cv2
 import pandas as pd
 from matplotlib import pyplot as plt
 
+#From pixels coordinates on screen to direction versor in camera frame
 
+
+'''
+
+From direction cosine matrix to Euler angles
+
+'''
 def dcm2euler(dcm):
     euler = [0, 0, 0]  # inizializza il vettore degli angoli di Eulero
 
@@ -46,6 +53,11 @@ def dcm2euler(dcm):
     return euler
 
 
+'''
+
+From Euler angles to direction cosine matrix 
+
+'''
 def euler2dcm(roll, pitch, yaw):
     Tbi = [0] * 9  # inizializza la matrice di direzioni coseni
 
@@ -71,6 +83,7 @@ def euler2dcm(roll, pitch, yaw):
 
     return Tbi
 
+
 def zoom(Zoom=1):
     FOV = 63.7
     return FOV/Zoom
@@ -81,8 +94,11 @@ Versore = (1,0,1)
 NorthX = []
 EastY = []
 
+#Script to compute geolocalization of targets detected on camera screen
 
 for i in range(0,len(telemetria)):
+
+    #From Camera frame to Body frame
 
     VersoreUAV = euler2dcm (math.radians(telemetria['Roll'][i]*0.9), math.radians(telemetria['Pitch'][i]*0.9), math.radians(telemetria['Yaw'][i]*0.9))
 
@@ -91,15 +107,19 @@ for i in range(0,len(telemetria)):
     ele2 = [(VersoreUAV [3] * Versore [0]) + (VersoreUAV [4] * Versore [1]) + (VersoreUAV [5] * Versore [2])]
     ele3 = [(VersoreUAV [6] * Versore [0]) + (VersoreUAV [7] * Versore [1]) + (VersoreUAV [8] * Versore [2])]
 
+    #Frome Body frame to inertial MED
+
     MUAV = euler2dcm(telemetria['roll'][i],telemetria['pitch'][i],telemetria['yaw'][i])
 
     ele1 = [(MUAV[0]*ele1[0]) + (MUAV[1]*ele2[0]) + (MUAV[2]*ele3[0])]
     ele2 = [(MUAV[3]*ele1[0]) + (MUAV[4]*ele2[0]) + (MUAV[5]*ele3[0])]
     ele3 = [(MUAV[6]*ele1[0]) + (MUAV[7]*ele2[0]) + (MUAV[8]*ele3[0])]
 
-    NorthX.append(((ele1[0]/ele3[0])*telemetria['quota'][i]))
+    #Projection of image axis
 
+    NorthX.append(((ele1[0]/ele3[0])*telemetria['quota'][i]))
     EastY.append(((ele2[0]/ele3[0])*telemetria['quota'][i]))
+
 
 telemetria['NorthX'] = NorthX
 telemetria['EastY'] = EastY
